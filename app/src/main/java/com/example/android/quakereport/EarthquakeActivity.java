@@ -16,7 +16,10 @@
 package com.example.android.quakereport;
 
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
@@ -27,6 +30,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,17 +47,20 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
 
     public static final String LOG_TAG = EarthquakeActivity.class.getName();
 
+    private TextView mEmptyStateTextView ;
+    private ProgressBar progressBar;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
 
+        //Adapter and Set Adapter
          earthQuakeAdapter=new EarthQuakeAdapter(EarthquakeActivity.this,0,new ArrayList<EarthQuake>());
-
         ListView earthquakeListView = findViewById(R.id.list);
-
         earthquakeListView.setAdapter(earthQuakeAdapter);
 
+        // onItemClick ListViw
         earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -62,13 +71,28 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
         });
 
 
+        mEmptyStateTextView =findViewById(R.id.empty_view);
+        earthquakeListView.setEmptyView(mEmptyStateTextView);
 
+        progressBar=findViewById(R.id.loading_spinner);
 
-        // Initialize the loader. Pass in the int ID constant defined above and pass in null for
-        // the bundle.
-        Log.i(LOG_TAG, "initLoader");
-        getSupportLoaderManager().initLoader(EARTHQUAKE_LOADER_ID, null,this );
+        ConnectivityManager connectivityManager=(ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo=connectivityManager.getActiveNetworkInfo();
 
+        Log.i(LOG_TAG, "Internet Connection");
+        // check Internet Connection
+        if(networkInfo!=null&& networkInfo.isConnected()) {
+            // Initialize the loader. Pass in the int ID constant defined above and pass in null for
+            // the bundle.
+            Log.i(LOG_TAG, "initLoader");
+            getSupportLoaderManager().initLoader(EARTHQUAKE_LOADER_ID, null, this);
+        }else {
+
+            progressBar.setVisibility(View.GONE);
+
+            // Update empty state with no connection error message
+            mEmptyStateTextView.setText(R.string.no_internet_connection);
+        }
 
 
     }
@@ -83,14 +107,23 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
 
     @Override
     public void onLoadFinished( Loader<ArrayList<EarthQuake>> loader, ArrayList<EarthQuake> earthQuakes) {
+
+        progressBar.setVisibility(View.GONE);
+        // Set empty state text to display "No earthquakes found."
+        mEmptyStateTextView.setText(R.string.no_earthquakes);
+
+
         Log.i(LOG_TAG, "onLoadFinished");
+
         // Clear the adapter of previous earthquake data
         earthQuakeAdapter.clear();
 
         // If there is a valid list of {@link Earthquake}s, then add them to the adapter's
         // data set. This will trigger the ListView to update.
         if (earthQuakes != null && !earthQuakes.isEmpty()) {
+
             earthQuakeAdapter.addAll(earthQuakes);
+
         }
     }
 
