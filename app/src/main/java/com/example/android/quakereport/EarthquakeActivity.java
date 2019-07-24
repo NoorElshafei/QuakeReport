@@ -59,6 +59,7 @@ public class EarthquakeActivity extends AppCompatActivity {
 
 
 
+        
 
     }
     private class EarthQuakeAsyncTask extends AsyncTask<String,Void,ArrayList<EarthQuake>>{
